@@ -20,21 +20,21 @@ module PrettyTreeTernary
     MIN_BINARY_LEAF_SIZE = 5 # Binary leaves require more space for connector symbols
     MAX_LABEL_WIDTH = 12
 
-    def box_for(tree, arity: 1)
-      return Box.leaf(format_leaf_label(nil, arity:), empty: true) if tree.nil?
+    def box_for(tree, parent_arity: 1)
+      return Box.leaf(format_leaf_label(nil, parent_arity:), empty: true) if tree.nil?
 
       children = tree[1...]
-      raise "Invalid tree arity, only binary and ternary trees are supported." if children.size > 3
+      raise "Invalid tree, only binary and ternary trees are supported." if children.size > 3
       # Visit all children, merge getting back from the recursion
-      child_boxes = children.map { |node| box_for(node, arity: children.size) }
-      node_box(tree.first, child_boxes, arity:)
+      child_boxes = children.map { |node| box_for(node, parent_arity: children.size) }
+      node_box(tree.first, child_boxes, parent_arity:)
     end
 
     private
 
-    def node_box(label, child_boxes, arity:)
+    def node_box(label, child_boxes, parent_arity:)
       if child_boxes.all?(&:empty?)
-        return Box.leaf(format_leaf_label(label, arity:))
+        return Box.leaf(format_leaf_label(label, parent_arity:))
       end
 
       lines, width, offsets = merge_children(child_boxes)
@@ -50,10 +50,10 @@ module PrettyTreeTernary
       Box.new(lines: new_lines, width:, anchor:, empty: false)
     end
 
-    def format_leaf_label(label, arity:)
+    def format_leaf_label(label, parent_arity:)
       label = label.nil? ? "" : format_label(label)
 
-      min_width = arity == 2 ? MIN_BINARY_LEAF_SIZE : MIN_LEAF_SIZE
+      min_width = parent_arity == 2 ? MIN_BINARY_LEAF_SIZE : MIN_LEAF_SIZE
       label.center(min_width)
     end
 
@@ -113,10 +113,9 @@ module PrettyTreeTernary
     end
 
     def render_connector_lines(parent_label, parent_anchor, boxes, offsets, width)
-      arity = offsets.size
       lines = Array.new(2) { " " * width }
 
-      case arity
+      case boxes.size
       when 1
         unless boxes.first.empty?
           lines = render_middle_branch(lines, offsets.first)
@@ -128,7 +127,7 @@ module PrettyTreeTernary
         unless boxes.last.empty?
           lines = render_right_branch(lines, parent_label, parent_anchor, offsets)
         end
-      else # arity == 3
+      else # boxes.size == 3
         unless boxes.first.empty?
           lines = render_left_branch(lines, parent_label, parent_anchor, offsets)
         end
