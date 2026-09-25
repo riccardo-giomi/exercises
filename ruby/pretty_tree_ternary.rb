@@ -21,7 +21,7 @@ module PrettyTreeTernary
     MAX_LABEL_WIDTH = 12
 
     def box_for(tree, parent_arity: 1)
-      return Box.leaf(format_leaf_label(nil, parent_arity:), empty: true) if tree.nil?
+      return Box.leaf(format_label(nil, parent_arity:), empty: true) if tree.nil?
 
       children = tree[1...]
       raise "Invalid tree, only binary and ternary trees are supported." if children.size > 3
@@ -33,13 +33,14 @@ module PrettyTreeTernary
     private
 
     def node_box(label, child_boxes, parent_arity:)
+      label = format_label(label, parent_arity:)
+
       if child_boxes.all?(&:empty?)
-        return Box.leaf(format_leaf_label(label, parent_arity:))
+        return Box.leaf(label)
       end
 
       lines, width, offsets = merge_children(child_boxes)
 
-      label = format_label(label)
       anchor = label_anchor_for(offsets)
       lines, width, offsets, anchor = pad_merged_children_horizontally(lines, width, offsets, anchor, label.length)
 
@@ -50,11 +51,13 @@ module PrettyTreeTernary
       Box.new(lines: new_lines, width:, anchor:, empty: false)
     end
 
-    def format_leaf_label(label, parent_arity:)
-      label = label.nil? ? "" : format_label(label)
+    def format_label(label, parent_arity:)
+      text = label.nil? ? "" : label.inspect
 
       min_width = parent_arity == 2 ? MIN_BINARY_LEAF_SIZE : MIN_LEAF_SIZE
-      label.center(min_width)
+      text = text.center(min_width)
+
+      text.size <= MAX_LABEL_WIDTH ? text : text[0, (MAX_LABEL_WIDTH - 3)] + "..."
     end
 
     def merge_children(boxes)
@@ -73,11 +76,6 @@ module PrettyTreeTernary
       end
 
       [lines, lines.first.length, offsets]
-    end
-
-    def format_label(label)
-      text = label.inspect
-      text.size <= MAX_LABEL_WIDTH ? text : text[0, (MAX_LABEL_WIDTH - 3)] + "..."
     end
 
     def label_anchor_for(offsets)
@@ -216,6 +214,7 @@ test([1, [2, [3, nil, nil]]])
 test(["a", ["b", nil, nil], nil])
 test(["a", nil, ["c", nil, nil]])
 test(["a", ["b", nil, nil], ["c", nil, nil]])
+test([1, [2, [3, [4]]], [5, [6]]])
 test(["a", ["b", nil, nil], ["c", nil, nil], ["d", nil, nil]])
 test([1, ["a", ["b", nil, nil], ["c", nil, nil], ["d", nil, nil] ], nil])
 test([1, nil, ["a", ["b", nil, nil], ["c", nil, nil], ["d", nil, nil]]])
