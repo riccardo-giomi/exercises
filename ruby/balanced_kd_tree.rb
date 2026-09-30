@@ -56,6 +56,8 @@ class BalancedKdTree
     @tree = build(values)
   end
 
+  def tree = @tree
+
   def between(x1:, y1:, x2:, y2:, tree: @tree, depth: 0)
     return [] if tree.nil?
 
